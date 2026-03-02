@@ -1,0 +1,94 @@
+1️⃣ Instalar Python (si no lo tenés)
+
+Verificá:
+
+python --version
+
+Si no está, instalar desde python.org (3.10+ recomendado).
+
+2️⃣ Crear carpeta del proyecto
+mkdir cotizador-fletes
+cd cotizador-fletes
+3️⃣ Crear entorno virtual (OBLIGATORIO)
+python -m venv venv
+
+Activar:
+
+Windows:
+
+venv\Scripts\activate
+
+Linux/Mac:
+
+source venv/bin/activate
+
+Si no activás venv, después todo se ensucia.
+
+4️⃣ Instalar dependencias base
+pip install fastapi uvicorn sqlalchemy
+
+Opcional pero recomendado:
+
+pip install python-dotenv
+5️⃣ Crear archivo requirements.txt
+pip freeze > requirements.txt
+
+Esto es profesional. Siempre.
+
+6️⃣ Crear estructura de carpetas
+
+Dentro del proyecto:
+
+/app
+    main.py
+    database.py
+    /models
+    /schemas
+    /services
+    /routers
+7️⃣ Crear app mínima funcional
+main.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"message": "Servidor funcionando"}
+8️⃣ Levantar servidor por primera vez
+uvicorn app.main:app --reload
+
+Abrís navegador:
+
+http://127.0.0.1:8000
+
+Si ves:
+
+{"message":"Servidor funcionando"}
+
+Ya estás operativo.
+
+9️⃣ Probar documentación automática
+
+Entrá a:
+
+http://127.0.0.1:8000/docs
+
+Eso lo genera automáticamente FastAPI.
+Esto es una de las razones por las que lo prefiero sobre Flask.
+
+🔟 Configurar base de datos (hoy mismo)
+database.py
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+DATABASE_URL = "sqlite:///./cotizador.db"
+
+engine = create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
+
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+Eso no crea tablas todavía. Solo configura.
