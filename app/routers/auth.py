@@ -5,6 +5,7 @@ from app.models.usuario import Usuario
 from app.auth.security import verify_password, create_access_token
 from app.auth.dependencies import get_current_user, require_admin
 from fastapi.security import OAuth2PasswordRequestForm
+from app.schemas.usuario import UsuarioResponse
 
 router = APIRouter()
 
@@ -36,13 +37,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me")
-def read_me(user: Usuario = Depends(get_current_user)):
-    return {
-        "username": user.username,
-        "role": user.role
-    }
-
+@router.get("/me", response_model=UsuarioResponse)
+def obtener_mi_usuario(
+    current_user: Usuario = Depends(get_current_user)
+):
+    return current_user
 
 @router.get("/admin-only")
 def admin_only(user: Usuario = Depends(require_admin)):

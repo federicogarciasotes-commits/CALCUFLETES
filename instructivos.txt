@@ -1,3 +1,6 @@
 Después de un cambio significativo en el proyecto, usar los siguientes comandos para guardar una versión en git:
 git add .
 git commit -m "Descripción clara del cambio"
+
+Para empezar a trabajar, usar el siguiente comando:
+venv\Scripts\activate

@@ -6,9 +6,9 @@ from app.models.usuario import Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioResponse
 from app.auth.security import pwd_context
 from app.auth.dependencies import require_admin
-from app.database import get_db
+from app.routers.auth import get_db
 from app.models.origen import Origen
-from app.dependencies import get_current_user
+from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
@@ -35,13 +35,15 @@ def crear_usuario(
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
     hashed_password = pwd_context.hash(usuario_data.password)
-
-    default_origen = db.query(Origen).filter(Origen.codigo == "DEFAULT").first()
     
+    default_origen = db.query(Origen).filter(Origen.es_default == True).first()
+
+    if not default_origen:
+        raise HTTPException(status_code=500, detail="No hay origen default configurado")
+
     nuevo_usuario = Usuario(
-        username=usuario_data.username,
-        password_hash=hashed_password,
-        role=usuario_data.role
+        username=user_data.username,
+        password=hash_password(user_data.password),
         origen_id=default_origen.id
     )
 
@@ -58,16 +60,24 @@ def cambiar_mi_origen(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # 1️ Verificar que el origen exista
     origen = db.query(Origen).filter(Origen.id == origen_id).first()
 
     if not origen:
         raise HTTPException(status_code=404, detail="Origen no encontrado")
 
-    current_user.origen_id = origen.id
+    # 2️ Traer el usuario dentro de ESTA sesión
+    user = db.query(Usuario).filter(Usuario.id == current_user.id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    # 3️ Actualizar
+    user.origen_id = origen.id
+
     db.commit()
-    db.refresh(current_user)
 
     return {
-        "message": "Origen actualizado",
-        "origen": origen.nombre
+        "message": "Origen actualizado correctamente",
+        "origen": origen.titulo
     }
