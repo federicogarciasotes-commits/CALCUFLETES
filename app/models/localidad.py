@@ -10,9 +10,10 @@ class Localidad(Base):
     nombre = Column(String)
 
     provincia_id = Column(Integer, ForeignKey("provincias.id"))
-    
-    codigo_postal = Column(String, nullable=True)
-
-    activo = Column(Boolean, default=True)
 
     provincia = relationship("Provincia", back_populates="localidades")
+    
+    codigos_postales = relationship(
+    "CodigoPostal",
+    back_populates="localidad"
+    )

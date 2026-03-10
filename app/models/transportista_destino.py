@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, ForeignKey
 from app.database import Base
 from sqlalchemy.orm import relationship
+from sqlalchemy import UniqueConstraint
 
 class TransportistaDestino(Base):
     __tablename__ = "transportista_destinos"
@@ -12,3 +13,7 @@ class TransportistaDestino(Base):
 
     transportista = relationship("Transportista", back_populates="destinos")
     localidad = relationship("Localidad")
+
+    __table_args__ = (
+        UniqueConstraint("transportista_id", "localidad_id"),
+    )

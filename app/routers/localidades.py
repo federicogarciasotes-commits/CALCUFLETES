@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -15,6 +15,23 @@ def get_db():
         db.close()
 
 
+@router.get("/buscar")
+def buscar_localidades(
+    nombre: str = Query(...),
+    db: Session = Depends(get_db)
+):
+
+    localidades = (
+        db.query(Localidad)
+        .filter(Localidad.nombre.ilike(f"%{nombre}%"))
+        .limit(20)
+        .all()
+    )
+
+    return localidades
+    return localidades
+
+
 @router.get("/{provincia_id}")
 def listar_localidades(provincia_id: int, db: Session = Depends(get_db)):
     localidades = (
@@ -26,7 +43,10 @@ def listar_localidades(provincia_id: int, db: Session = Depends(get_db)):
     return [
         {
             "id": l.id,
-            "nombre": l.nombre
+            "nombre": l.nombre,
+            # "codigo postal": l.codigo_postal
         }
         for l in localidades
     ]
+    
+

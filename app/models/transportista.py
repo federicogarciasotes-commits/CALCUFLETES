@@ -9,4 +9,14 @@ class Transportista(Base):
     nombre = Column(String)
     descripcion = Column(String)
 
-    destinos = relationship("TransportistaDestino", back_populates="transportista")
+    destinos = relationship(
+        "TransportistaDestino",
+        back_populates="transportista",
+        cascade="all, delete-orphan"
+    )
+
+    dias = relationship(
+        "TransportistaDia",
+        back_populates="transportista",
+        cascade="all, delete-orphan"
+    )

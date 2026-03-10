@@ -8,7 +8,8 @@ from app.routers import transportistas
 from app.routers import provincias
 from app.routers import localidades
 from app.routers import transportistas
-
+from app.routers import rutas
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
@@ -19,7 +20,20 @@ app.include_router(origenes.router)
 app.include_router(transportistas.router)
 app.include_router(provincias.router)
 app.include_router(localidades.router)
-app.include_router(transportistas.router)
+app.include_router(rutas.router)
+
+
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")

@@ -7,6 +7,7 @@ from app.schemas.usuario import UsuarioCreate, UsuarioResponse
 from app.auth.security import pwd_context
 from app.auth.dependencies import require_admin
 from app.routers.auth import get_db
+from app.models.direccion import Direccion
 from app.models.origen import Origen
 from app.auth.dependencies import get_current_user
 
@@ -27,6 +28,7 @@ def crear_usuario(
     db: Session = Depends(get_db),
     admin=Depends(require_admin)
 ):
+
     existing_user = db.query(Usuario).filter(
         Usuario.username == usuario_data.username
     ).first()
@@ -35,17 +37,29 @@ def crear_usuario(
         raise HTTPException(status_code=400, detail="El usuario ya existe")
 
     hashed_password = pwd_context.hash(usuario_data.password)
-    
-    default_origen = db.query(Origen).filter(Origen.es_default == True).first()
+
+    default_origen = db.query(Origen).filter(
+        Origen.es_default == True
+    ).first()
 
     if not default_origen:
-        raise HTTPException(status_code=500, detail="No hay origen default configurado")
+        raise HTTPException(
+            status_code=500,
+            detail="No hay origen default configurado"
+        )
+
+    if usuario_data.role not in ["admin", "vendedor"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Rol inválido"
+        )
 
     nuevo_usuario = Usuario(
-        username=user_data.username,
-        password=hash_password(user_data.password),
-        origen_id=default_origen.id
-    )
+    username=usuario_data.username,
+    hashed_password=hashed_password,
+    role=usuario_data.role,
+    origen_id=default_origen.id
+)
 
     db.add(nuevo_usuario)
     db.commit()
@@ -79,5 +93,5 @@ def cambiar_mi_origen(
 
     return {
         "message": "Origen actualizado correctamente",
-        "origen": origen.titulo
+        "origen": origen.nombre
     }

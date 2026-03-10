@@ -10,6 +10,7 @@ class Usuario(Base):
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
     role = Column(String)
-
+    
     origen_id = Column(Integer, ForeignKey("origenes.id"))
+
     origen = relationship("Origen")

@@ -1,7 +1,7 @@
 from app.database import SessionLocal, engine, Base
 from app.models.usuario import Usuario
 from app.auth.security import pwd_context
-
+from app.models.direccion import Direccion
 from app.models.origen import Origen
 
 # Crear tablas si no existen
@@ -31,28 +31,47 @@ else:
 default = db.query(Origen).filter(Origen.es_default).first()
 
 if not default:
-    default = Origen(id= 1, 
-                     titulo = "Droguería", 
-                     provincia = "Cordoba",
-                     localidad = "Cordoba",
-                     calle = "Suecia",
-                     numero = 2909,
-                     codigo_postal = 5013,
-                     es_default = True)
-    db.add(default)
+
+    direccion1 = Direccion(
+        calle="Suecia",
+        altura=2909,
+        localidad_id=400,
+        codigo_postal=5013
+    )
+
+    db.add(direccion1)
+    db.commit()
+    db.refresh(direccion1)
+
+    origen1 = Origen(
+        nombre="Droguería",
+        direccion_id=direccion1.id,
+        es_default=True
+    )
+
+    db.add(origen1)
     db.commit()
     
-d2 = Origen(id= 2, 
-                     titulo = "Depósito", 
-                     provincia = "Cordoba",
-                     localidad = "Cordoba",
-                     calle = "Av Malvinas",
-                     numero = 4000,
-                     codigo_postal = 5016,
-                     piso = "PB",
-                     departamento = "B",
-                     es_default = False)
-db.add(d2)
+direccion2 = Direccion(
+    calle="Av Malvinas",
+    altura=4000,
+    localidad_id=400,
+    codigo_postal=5016,
+    piso="PB",
+    departamento="B"
+)
+
+db.add(direccion2)
+db.commit()
+db.refresh(direccion2)
+
+origen2 = Origen(
+    nombre="Depósito",
+    direccion_id=direccion2.id,
+    es_default=False
+)
+
+db.add(origen2)
 db.commit()   
 
 db.close()
