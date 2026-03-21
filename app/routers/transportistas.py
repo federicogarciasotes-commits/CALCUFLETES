@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.transportista import Transportista
 from app.models.transportista_destino import TransportistaDestino
 from app.models.transportista_dia import TransportistaDia
+from app.models.dias_reparto import DiaReparto
 
 from app.schemas.transportista import (
     TransportistaCreate,
@@ -13,14 +14,6 @@ from app.schemas.transportista import (
 )
 from app.models.usuario import Usuario
 from app.auth.dependencies import get_current_user
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def transportista_to_dict(t: Transportista):
@@ -88,6 +81,11 @@ def crear_transportista(
         "destinos_ids": data.destinos_ids,
         "dias_ids": data.dias_ids
     }
+
+
+@router.get("/dias/")
+def listar_dias(db: Session = Depends(get_db)):
+    return db.query(DiaReparto).all()
 
 
 @router.get("/por-destino/{localidad_id}")

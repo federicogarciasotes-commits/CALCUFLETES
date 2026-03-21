@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.routers.auth import get_db
+from app.database import get_db
 from app.schemas.ruta import RutaRequest
 from app.models.localidad import Localidad
 from app.models.provincia import Provincia

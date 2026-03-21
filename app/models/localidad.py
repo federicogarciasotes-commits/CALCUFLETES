@@ -11,9 +11,13 @@ class Localidad(Base):
 
     provincia_id = Column(Integer, ForeignKey("provincias.id"))
 
+    cp_principal = Column(String, index=True)
+
     provincia = relationship("Provincia", back_populates="localidades")
-    
+
     codigos_postales = relationship(
-    "CodigoPostal",
-    back_populates="localidad"
+        "CodigoPostal",
+        back_populates="localidad",
+        cascade="all, delete-orphan"
     )
+    

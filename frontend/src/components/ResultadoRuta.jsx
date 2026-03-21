@@ -12,9 +12,18 @@ return(
 <img src={resultado.mapa} alt="Mapa de ruta"/>
 </div>
 
-<div className="info-container">
-<p><b>Distancia:</b> {resultado.distancia}</p>
-<p><b>Tiempo estimado:</b> {resultado.duracion}</p>
+<div className="resultado-info">
+
+  <div className="info-item">
+    <strong>Distancia: </strong>
+    <span>{resultado.distancia}</span>
+  </div>
+
+  <div className="info-item">
+    <strong>Tiempo estimado: </strong>
+    <span>{resultado.duracion}</span>
+  </div>
+
 </div>
 
 </div>

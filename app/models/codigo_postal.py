@@ -7,7 +7,7 @@ class CodigoPostal(Base):
 
     id = Column(Integer, primary_key=True)
 
-    codigo = Column(String, nullable=False)
+    codigo = Column(String, nullable=False, index=True)
 
     localidad_id = Column(Integer, ForeignKey("localidades.id"))
 

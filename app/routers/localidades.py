@@ -1,52 +1,38 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.localidad import Localidad
+from app.models.codigo_postal import CodigoPostal
 
 router = APIRouter(prefix="/localidades", tags=["Localidades"])
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/buscar")
-def buscar_localidades(
-    nombre: str = Query(...),
+def obtener_localidades(
+    provincia_id: int | None = None,
+    nombre: str | None = None,
     db: Session = Depends(get_db)
 ):
 
-    localidades = (
-        db.query(Localidad)
-        .filter(Localidad.nombre.ilike(f"%{nombre}%"))
-        .limit(20)
-        .all()
-    )
+    query = db.query(Localidad)
 
-    return localidades
-    return localidades
+    if provincia_id:
+        query = query.filter(Localidad.provincia_id == provincia_id)
 
+    if nombre:
+        query = query.filter(Localidad.nombre.ilike(f"%{nombre}%"))
 
-@router.get("/{provincia_id}")
-def listar_localidades(provincia_id: int, db: Session = Depends(get_db)):
-    localidades = (
-        db.query(Localidad)
-        .filter(Localidad.provincia_id == provincia_id)
-        .all()
-    )
+    return query.limit(1500).all()
 
-    return [
-        {
-            "id": l.id,
-            "nombre": l.nombre,
-            # "codigo postal": l.codigo_postal
-        }
-        for l in localidades
-    ]
-    
+@router.get("/{id}/cp-principal")
+def cp_principal(id: int, db: Session = Depends(get_db)):
 
+    localidad = db.query(Localidad).filter(
+        Localidad.id == id
+    ).first()
+
+    if not localidad or not localidad.cp_principal:
+        return {"error": "sin codigo postal"}
+
+    return {"codigo_postal": localidad.cp_principal}

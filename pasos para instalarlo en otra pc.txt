@@ -1,0 +1,9 @@
+1. Tener instalado Python (py --version)
+2. Usar los siguientes comandos:
+	python -m venv venv
+	venv\Scripts\activate
+	pip install -r requirements.txt
+3. Instalar Node.js: nodejs.org
+4. Usar estos comandos:
+	npm install
+	npm run dev

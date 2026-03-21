@@ -8,3 +8,4 @@ from .dias_reparto import DiaReparto
 from .transportista_dia import TransportistaDia
 from .codigo_postal import CodigoPostal
 from .origen import Origen
+from .producto import Producto, Subcategoria

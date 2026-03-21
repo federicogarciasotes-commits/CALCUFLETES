@@ -1,5 +1,14 @@
+import { useState, useEffect } from "react"
 import axios from "axios"
-import { buscarLocalidades } from "../services/localidades"
+
+// Normaliza texto: minúsculas, sin acentos, sin puntos
+function normalizar(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\./g, "")
+}
 
 function DestinoForm({
   destino,
@@ -11,125 +20,125 @@ function DestinoForm({
   setResultadosDestino
 }) {
 
-return (
+  const [todasLocalidades, setTodasLocalidades] = useState([])
 
-<div className="form-box">
+  const cargarLocalidades = async (provincia_id) => {
+    if (!provincia_id) return
+    const res = await axios.get(`http://127.0.0.1:8000/localidades/buscar`, {
+		params: { provincia_id }
+	})
+    const ordenadas = res.data.sort((a, b) => a.nombre.localeCompare(b.nombre))
+    setTodasLocalidades(ordenadas)
+  }
 
-<h3>Destino</h3>
+  useEffect(() => {
+    if (destino.provincia_id) {
+      cargarLocalidades(destino.provincia_id)
+    }
+  }, [destino.provincia_id])
 
-<input
-placeholder="Calle"
-value={destino.calle}
-onChange={(e)=>
-setDestino({...destino, calle:e.target.value})
-}
-/>
+  const filtrarLocalidades = (texto) => {
+    const textNorm = normalizar(texto)
+    const filtradas = todasLocalidades.filter(loc =>
+      normalizar(loc.nombre).includes(textNorm)
+    )
+    setResultadosDestino(filtradas)
+  }
 
-<input
-placeholder="Número"
-value={destino.altura}
-onChange={(e)=>
-setDestino({...destino, altura:e.target.value})
-}
-/>
+  return (
+    <>
+      <h3>Destino</h3>
 
-<select
-value={destino.provincia_id}
-onChange={(e)=>{
+      <input
+        placeholder="Calle"
+        value={destino.calle}
+        onChange={(e) => setDestino({ ...destino, calle: e.target.value })}
+      />
 
-const provincia_id = e.target.value
+      <input
+        placeholder="Número"
+        value={destino.altura}
+        onChange={(e) => setDestino({ ...destino, altura: e.target.value })}
+      />
 
-setDestino({
-...destino,
-provincia_id,
-localidad_id:""
-})
+      <input
+        value={destino.piso}
+        placeholder="Piso (opcional)"
+        onChange={(e) => setDestino({ ...destino, piso: e.target.value })}
+      />
 
-}}
->
+      <input
+        value={destino.departamento}
+        placeholder="Departamento (opcional)"
+        onChange={(e) => setDestino({ ...destino, departamento: e.target.value })}
+      />
 
-<option value="">Provincia</option>
+      <select
+        value={destino.provincia_id}
+        onChange={(e) => {
+          const provincia_id = e.target.value
+          setDestino({ ...destino, provincia_id, localidad_id: "" })
+          setBusquedaLocalidadDestino("")
+          setResultadosDestino([])
+          setTodasLocalidades([])
+          if (provincia_id) cargarLocalidades(provincia_id)
+        }}
+      >
+        <option value="">Provincia</option>
+        {provincias.map((p) => (
+          <option key={p.id} value={p.id}>{p.nombre}</option>
+        ))}
+      </select>
 
-{provincias.map((p)=>(
-<option key={p.id} value={p.id}>
-{p.nombre}
-</option>
-))}
+      {/* SELECTOR DE LOCALIDAD */}
+      <div className="autocomplete">
 
-</select>
+        <input
+          type="text"
+          placeholder="Buscar localidad..."
+          value={busquedaLocalidadDestino}
+          disabled={!destino.provincia_id}
 
-<div className="autocomplete">
+          onFocus={() => {
+            if (todasLocalidades.length > 0) {
+              setResultadosDestino(todasLocalidades)
+            }
+          }}
 
-<input
-type="text"
-placeholder="Buscar localidad..."
-value={busquedaLocalidadDestino}
-onBlur={() => setTimeout(() => setResultadosDestino([]), 200)}
+          onBlur={() => setTimeout(() => setResultadosDestino([]), 200)}
 
-onFocus={async () => {
+          onChange={(e) => {
+            const texto = e.target.value
+            setBusquedaLocalidadDestino(texto)
+            if (texto.length === 0) {
+              setResultadosDestino(todasLocalidades)
+            } else {
+              filtrarLocalidades(texto)
+            }
+          }}
+        />
 
-if (!destino.provincia_id) return
+        {resultadosDestino.length > 0 && (
+          <div className="autocomplete-dropdown">
+            {resultadosDestino.map((loc) => (
+              <div
+                key={loc.id}
+                className="autocomplete-item"
+                onClick={() => {
+                  setDestino({ ...destino, localidad_id: loc.id })
+                  setBusquedaLocalidadDestino(loc.nombre)
+                  setResultadosDestino([])
+                }}
+              >
+                {loc.nombre}
+              </div>
+            ))}
+          </div>
+        )}
 
-const res = await axios.get(
-`http://localhost:8000/localidades/${destino.provincia_id}`
-)
-
-setResultadosDestino(res.data)
-
-}}
-
-onChange={async (e)=>{
-
-const texto = e.target.value
-setBusquedaLocalidadDestino(texto)
-
-if (texto.length < 2) return
-
-const data = await buscarLocalidades(texto)
-
-setResultadosDestino(data)
-
-}}
-/>
-
-{resultadosDestino.length > 0 && (
-
-<div className="autocomplete-list">
-
-{resultadosDestino.map((loc) => (
-
-<div
-key={loc.id}
-className="autocomplete-item"
-onClick={() => {
-
-setDestino({
-...destino,
-localidad_id: loc.id
-})
-
-setBusquedaLocalidadDestino(loc.nombre)
-setResultadosDestino([])
-
-}}
->
-
-{loc.nombre}
-
-</div>
-
-))}
-
-</div>
-
-)}
-
-</div>
-
-</div>
-
-)
-
+      </div>
+    </>
+  )
 }
 
 export default DestinoForm

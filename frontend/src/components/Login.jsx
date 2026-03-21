@@ -1,11 +1,13 @@
 import { useState } from "react"
 import axios from "axios"
+import '../App.css'
 
 function Login({ setUsuario }) {
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [mensaje, setMensaje] = useState("")
+
 
   const login = async () => {
 
@@ -16,15 +18,19 @@ function Login({ setUsuario }) {
       params.append("password", password)
 
       const res = await axios.post(
-        "http://localhost:8000/login",
+        "http://127.0.0.1:8000/login",
         params
       )
 
       const token = res.data.access_token
 
       localStorage.setItem("token", token)
-
-      setUsuario({ username })
+	  
+	  const me = await axios.get("http://127.0.0.1:8000/me", {
+	    headers: { Authorization: `Bearer ${token}` }
+	  })
+	  localStorage.setItem("usuario", JSON.stringify(me.data))
+	  setUsuario(me.data)
 
     } catch (error) {
 
@@ -35,40 +41,40 @@ function Login({ setUsuario }) {
 
   }
 
-  return (
+   return (
 
-    <div style={{ padding: 40, maxWidth: 400 }}>
-	
-	<h1>CALCUFLETES</h1>
+	  <div className="login-container">
 
-      <h2>Login</h2>
+		<div className="login-card">
 
-      <input
-        placeholder="usuario"
-        value={username}
-        onChange={(e)=>setUsername(e.target.value)}
-      />
+		  <h1>CALCUFLETES</h1>
 
-      <br /><br />
+		  <h2>Login</h2>
 
-      <input
-        type="password"
-        placeholder="password"
-        value={password}
-        onChange={(e)=>setPassword(e.target.value)}
-      />
+		  <input
+			placeholder="Usuario"
+			value={username}
+			onChange={(e)=>setUsername(e.target.value)}
+		  />
 
-      <br /><br />
+		  <input
+			type="password"
+			placeholder="Password"
+			value={password}
+			onChange={(e)=>setPassword(e.target.value)}
+		  />
 
-      <button onClick={login}>
-        Login
-      </button>
+		  <button onClick={login}>
+			Login
+		  </button>
 
-      <p>{mensaje}</p>
+		  <p className="login-mensaje">{mensaje}</p>
 
-    </div>
+		</div>
 
-  )
+	  </div>
+
+	)
 
 }
 

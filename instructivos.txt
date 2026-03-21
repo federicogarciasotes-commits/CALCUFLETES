@@ -4,3 +4,8 @@ git commit -m "Descripción clara del cambio"
 
 Para empezar a trabajar, usar el siguiente comando:
 venv\Scripts\activate
+
+Para levantar el back:
+uvicorn app.main:app --reload
+Para levantar el front:
+npm run dev

@@ -34,8 +34,11 @@ function TransportistasDisponibles({ transportistas, seleccionarTransportista })
               <td>{t.descripcion}</td>
 
               <td>
-			  {t.precio ? `$${t.precio}` : "Cotizar"}
-			 </td>
+					{t.precio
+						? `$${Number(t.precio).toLocaleString("es-AR")}`
+						: "Cotizar"
+					}
+				</td>
 
               <td>
 			  {t.dias && t.dias.length > 0

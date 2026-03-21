@@ -1,5 +1,14 @@
+import { useState, useEffect } from "react"
 import axios from "axios"
-import { buscarLocalidades } from "../services/localidades"
+
+// Normaliza texto: minúsculas, sin acentos, sin puntos
+function normalizar(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\./g, "")
+}
 
 function OrigenForm({
   origen,
@@ -12,132 +21,137 @@ function OrigenForm({
   setBusquedaLocalidadOrigen,
   resultadosOrigen,
   setResultadosOrigen,
-  mostrarLocalidadesProvinciaOrigen
 }) {
 
+  const [todasLocalidades, setTodasLocalidades] = useState([])
+
+  const cargarLocalidades = async (provincia_id) => {
+    if (!provincia_id) return
+    const res = await axios.get(`http://127.0.0.1:8000/localidades/buscar`, {
+		params: { provincia_id }
+	})
+    const ordenadas = res.data.sort((a, b) => a.nombre.localeCompare(b.nombre))
+    setTodasLocalidades(ordenadas)
+  }
+
+  useEffect(() => {
+    if (origen.provincia_id) {
+      cargarLocalidades(origen.provincia_id)
+    }
+  }, [origen.provincia_id])
+
+  const filtrarLocalidades = (texto) => {
+    const textNorm = normalizar(texto)
+    const filtradas = todasLocalidades.filter(loc =>
+      normalizar(loc.nombre).includes(textNorm)
+    )
+    setResultadosOrigen(filtradas)
+  }
+
   return (
+    <>
+      <h3>Origen (default)</h3>
 
-<div className="form-box">
+      <select
+        value={origenSeleccionado?.id || ""}
+        onChange={(e) => cambiarOrigen(e.target.value)}
+      >
+        {origenes.map(o => (
+          <option key={o.id} value={o.id}>{o.nombre}</option>
+        ))}
+      </select>
 
-<h3>Origen (default)</h3>
+      <input
+        value={origen.calle}
+        placeholder="Calle"
+        onChange={(e) => setOrigen({ ...origen, calle: e.target.value })}
+      />
 
-<select
-  value={origenSeleccionado?.id || ""}
-  onChange={(e) => cambiarOrigen(e.target.value)}
->
+      <input
+        value={origen.altura}
+        placeholder="Número"
+        onChange={(e) => setOrigen({ ...origen, altura: e.target.value })}
+      />
 
-{origenes.map(o => (
-<option key={o.id} value={o.id}>
-{o.nombre}
-</option>
-))}
+      <input
+        value={origen.piso}
+        placeholder="Piso (opcional)"
+        onChange={(e) => setOrigen({ ...origen, piso: e.target.value })}
+      />
 
-</select>
+      <input
+        value={origen.departamento}
+        placeholder="Departamento (opcional)"
+        onChange={(e) => setOrigen({ ...origen, departamento: e.target.value })}
+      />
 
-<input
-value={origen.calle}
-placeholder="Calle"
-onChange={(e)=>
-setOrigen({...origen, calle:e.target.value})
-}
-/>
+      <select
+        value={origen.provincia_id}
+        onChange={(e) => {
+          const provincia_id = e.target.value
+          setOrigen({ ...origen, provincia_id, localidad_id: "" })
+          setBusquedaLocalidadOrigen("")
+          setResultadosOrigen([])
+          setTodasLocalidades([])
+          if (provincia_id) cargarLocalidades(provincia_id)
+        }}
+      >
+        <option value="">Provincia</option>
+        {provincias.map((p) => (
+          <option key={p.id} value={p.id}>{p.nombre}</option>
+        ))}
+      </select>
 
-<input
-value={origen.altura}
-placeholder="Número"
-onChange={(e)=>
-setOrigen({...origen, altura:e.target.value})
-}
-/>
+      {/* SELECTOR DE LOCALIDAD */}
+      <div className="autocomplete">
 
-<select
-value={origen.provincia_id}
-onChange={async (e)=>{
+        <input
+          type="text"
+          placeholder="Buscar localidad..."
+          value={busquedaLocalidadOrigen}
+          disabled={!origen.provincia_id}
 
-const provincia_id = e.target.value
+          onFocus={() => {
+            if (todasLocalidades.length > 0) {
+              setResultadosOrigen(todasLocalidades)
+            } else if (origen.provincia_id) {
+              cargarLocalidades(origen.provincia_id)
+            }
+          }}
 
-setOrigen({
-...origen,
-provincia_id,
-localidad_id:""
-})
+          onBlur={() => setTimeout(() => setResultadosOrigen([]), 200)}
 
-}}
->
+          onChange={(e) => {
+            const texto = e.target.value
+            setBusquedaLocalidadOrigen(texto)
+            if (texto.length === 0) {
+              setResultadosOrigen(todasLocalidades)
+            } else {
+              filtrarLocalidades(texto)
+            }
+          }}
+        />
 
-<option value="">Provincia</option>
+        {resultadosOrigen.length > 0 && (
+          <div className="autocomplete-dropdown">
+            {resultadosOrigen.map((loc) => (
+              <div
+                key={loc.id}
+                className="autocomplete-item"
+                onClick={() => {
+                  setOrigen({ ...origen, localidad_id: loc.id })
+                  setBusquedaLocalidadOrigen(loc.nombre)
+                  setResultadosOrigen([])
+                }}
+              >
+                {loc.nombre}
+              </div>
+            ))}
+          </div>
+        )}
 
-{provincias.map((p)=>(
-<option key={p.id} value={p.id}>
-{p.nombre}
-</option>
-))}
-
-</select>
-
-<div className="autocomplete">
-
-<input
-type="text"
-placeholder="Buscar localidad..."
-value={busquedaLocalidadOrigen}
-onBlur={() => setTimeout(() => setResultadosOrigen([]), 200)}
-
-onFocus={mostrarLocalidadesProvinciaOrigen}
-
-onChange={async (e)=>{
-
-const texto = e.target.value
-setBusquedaLocalidadOrigen(texto)
-
-if (texto.length < 2) {
-mostrarLocalidadesProvinciaOrigen()
-return
-}
-
-const data = await buscarLocalidades(texto)
-
-setResultadosOrigen(data)
-
-}}
-/>
-
-{resultadosOrigen.length > 0 && (
-
-<div className="autocomplete-list">
-
-{resultadosOrigen.map((loc) => (
-
-<div
-key={loc.id}
-className="autocomplete-item"
-onClick={() => {
-
-setOrigen({
-...origen,
-localidad_id: loc.id
-})
-
-setBusquedaLocalidadOrigen(loc.nombre)
-setResultadosOrigen([])
-
-}}
->
-
-{loc.nombre}
-
-</div>
-
-))}
-
-</div>
-
-)}
-
-</div>
-
-</div>
-
+      </div>
+    </>
   )
 }
 

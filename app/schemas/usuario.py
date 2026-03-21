@@ -13,3 +13,9 @@ class UsuarioResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+
+class UsuarioUpdate(BaseModel):
+    username: str | None = None
+    password: str | None = None
+    role: Literal["admin", "vendedor"] | None = None

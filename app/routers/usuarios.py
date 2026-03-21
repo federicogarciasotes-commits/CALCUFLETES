@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.database import get_db
 from app.models.usuario import Usuario
-from app.schemas.usuario import UsuarioCreate, UsuarioResponse
+from app.schemas.usuario import UsuarioCreate, UsuarioResponse, UsuarioUpdate
 from app.auth.security import pwd_context
 from app.auth.dependencies import require_admin
 from app.routers.auth import get_db
@@ -12,14 +12,6 @@ from app.models.origen import Origen
 from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post("/", response_model=UsuarioResponse)
@@ -56,7 +48,7 @@ def crear_usuario(
 
     nuevo_usuario = Usuario(
     username=usuario_data.username,
-    hashed_password=hashed_password,
+    password_hash=hashed_password,
     role=usuario_data.role,
     origen_id=default_origen.id
 )
@@ -95,3 +87,35 @@ def cambiar_mi_origen(
         "message": "Origen actualizado correctamente",
         "origen": origen.nombre
     }
+    
+
+# Listar todos los usuarios (solo admin)
+@router.get("/listar", response_model=list[UsuarioResponse])
+def listar_usuarios(db=Depends(get_db), admin=Depends(require_admin)):
+    return db.query(Usuario).all()
+
+# Editar usuario (solo admin)
+@router.put("/{usuario_id}", response_model=UsuarioResponse)
+def editar_usuario(usuario_id: int, datos: UsuarioUpdate, db=Depends(get_db), admin=Depends(require_admin)):
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if datos.username:
+        usuario.username = datos.username
+    if datos.password:
+        usuario.password_hash = pwd_context.hash(datos.password)
+    if datos.role:
+        usuario.role = datos.role
+    db.commit()
+    db.refresh(usuario)
+    return usuario
+
+# Eliminar usuario (solo admin)
+@router.delete("/{usuario_id}")
+def eliminar_usuario(usuario_id: int, db=Depends(get_db), admin=Depends(require_admin)):
+    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    db.delete(usuario)
+    db.commit()
+    return {"message": "Usuario eliminado"}

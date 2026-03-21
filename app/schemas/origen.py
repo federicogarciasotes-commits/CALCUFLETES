@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from app.schemas.direccion import DireccionResponse
+from app.schemas.direccion import DireccionInput
 
 
 class OrigenTitulo(BaseModel):
@@ -20,3 +21,9 @@ class OrigenResponse(BaseModel):
     es_default: bool
 
     direccion: DireccionResponse
+
+
+class OrigenCreate(BaseModel):
+    nombre: str
+    es_default: bool = False
+    direccion: DireccionInput  # calle, altura, piso, departamento, localidad_id

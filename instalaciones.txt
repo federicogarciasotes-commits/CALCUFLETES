@@ -92,3 +92,5 @@ SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
 Eso no crea tablas todavía. Solo configura.
+
+11. Instalar node.js 
