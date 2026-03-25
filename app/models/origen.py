@@ -14,4 +14,8 @@ class Origen(Base):
 
     es_default = Column(Boolean, default=False)
 
-    direccion = relationship("Direccion")
+    direccion = relationship(
+    "Direccion",
+    cascade="all, delete-orphan",
+    single_parent=True
+)

@@ -119,18 +119,20 @@ function App() {
 	  }
 	}
 
-	// El useEffect simplemente la llama:
-	useEffect(() => {
-	  cargarOrigenDefault()
-	  cargarOrigenes()
-	}, [])
-
 	// Y actualizá onOrigenCambiado para que llame a las dos:
 	const cargarOrigenes = () => {
 	  axios.get("http://127.0.0.1:8000/origenes/titulos")
 		.then(res => setOrigenes(res.data))
 	  cargarOrigenDefault()  // agregar esta línea
 	}
+
+	// El useEffect simplemente la llama:
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+	  cargarOrigenDefault()
+	  cargarOrigenes()
+	}, []) // eslint-disable-line react-hooks/exhaustive-deps
+
 
   async function cambiarOrigen(id){
 

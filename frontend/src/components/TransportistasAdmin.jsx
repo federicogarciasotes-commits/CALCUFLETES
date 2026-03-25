@@ -11,11 +11,14 @@ export default function TransportistasAdmin() {
   const [localidadesBuscadas, setLocalidadesBuscadas] = useState([])
   const [provinciaFiltro, setProvinciaFiltro] = useState("")
   const [busquedaNombre, setBusquedaNombre] = useState("")
-  // Para mostrar nombres de las localidades seleccionadas
   const [localidadesSeleccionadas, setLocalidadesSeleccionadas] = useState([]) // [{id, nombre}]
   const [editandoId, setEditandoId] = useState(null)
   const [error, setError] = useState("")
   const [form, setForm] = useState({ nombre: "", descripcion: "", dias_ids: [] })
+
+  // Snapshots para detectar cambios en edición
+  const [originalForm, setOriginalForm] = useState(null)
+  const [originalLocalidades, setOriginalLocalidades] = useState(null)
 
   const cargar = async () => {
     const r = await axios.get(`${API}/transportistas/listar`, { headers: headers() })
@@ -23,6 +26,7 @@ export default function TransportistasAdmin() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     cargar()
     axios.get(`${API}/provincias/`).then(r => setProvincias(r.data))
     axios.get(`${API}/transportistas/dias/`).then(r => setDias(r.data))
@@ -31,6 +35,7 @@ export default function TransportistasAdmin() {
   // Buscar localidades cuando cambia provincia o nombre
   useEffect(() => {
     if (!provinciaFiltro && !busquedaNombre) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalidadesBuscadas([])
       return
     }
@@ -39,6 +44,37 @@ export default function TransportistasAdmin() {
     if (busquedaNombre) params.append("nombre", busquedaNombre)
     axios.get(`${API}/localidades/buscar?${params}`).then(r => setLocalidadesBuscadas(r.data))
   }, [provinciaFiltro, busquedaNombre])
+
+  // Auto-dismiss del error
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
+
+  // Deshabilitar botón guardar
+  const guardarDeshabilitado = (() => {
+    if (!form.nombre.trim()) return true
+    if (form.dias_ids.length === 0) return true
+    if (localidadesSeleccionadas.length === 0) return true
+
+    if (editandoId && originalForm && originalLocalidades !== null) {
+      const mismoNombre = form.nombre === originalForm.nombre
+      const mismaDesc = form.descripcion === originalForm.descripcion
+      const mismosDias =
+        form.dias_ids.length === originalForm.dias_ids.length &&
+        [...form.dias_ids].sort().join() === [...originalForm.dias_ids].sort().join()
+      const mismasLocalidades =
+        localidadesSeleccionadas.length === originalLocalidades.length &&
+        [...localidadesSeleccionadas].map(l => l.id).sort().join() ===
+        [...originalLocalidades].map(l => l.id).sort().join()
+
+      if (mismoNombre && mismaDesc && mismosDias && mismasLocalidades) return true
+    }
+
+    return false
+  })()
 
   const toggleDia = (id) => setForm(f => ({
     ...f,
@@ -65,6 +101,8 @@ export default function TransportistasAdmin() {
   const guardar = async () => {
     setError("")
     if (!form.nombre.trim()) return setError("El nombre es obligatorio")
+    if (form.dias_ids.length === 0) return setError("Seleccioná al menos un día de reparto")
+    if (localidadesSeleccionadas.length === 0) return setError("Seleccioná al menos un destino")
     const body = {
       ...form,
       destinos_ids: localidadesSeleccionadas.map(l => l.id)
@@ -84,17 +122,19 @@ export default function TransportistasAdmin() {
 
   const editar = async (t) => {
     setEditandoId(t.id)
-    setForm({ nombre: t.nombre, descripcion: t.descripcion || "", dias_ids: t.dias_ids })
-    // Cargar nombres de los destinos actuales
+    const datos = { nombre: t.nombre, descripcion: t.descripcion || "", dias_ids: t.dias_ids }
+    setForm(datos)
+    setOriginalForm(datos)
+
     if (t.destinos_ids.length > 0) {
-      const r = await axios.get(`${API}/localidades/buscar`)
-      // Traer los que coincidan — o podés usar el endpoint de nombres del transportista
+      await axios.get(`${API}/localidades/buscar`)
       const detalle = await axios.get(`${API}/transportistas/${t.id}`)
-      setLocalidadesSeleccionadas(
-        detalle.data.destinos.map((nombre, i) => ({ id: t.destinos_ids[i], nombre }))
-      )
+      const locs = detalle.data.destinos.map((nombre, i) => ({ id: t.destinos_ids[i], nombre }))
+      setLocalidadesSeleccionadas(locs)
+      setOriginalLocalidades(locs)
     } else {
       setLocalidadesSeleccionadas([])
+      setOriginalLocalidades([])
     }
   }
 
@@ -112,8 +152,11 @@ export default function TransportistasAdmin() {
     setEditandoId(null)
     setForm({ nombre: "", descripcion: "", dias_ids: [] })
     setLocalidadesSeleccionadas([])
+    setOriginalForm(null)
+    setOriginalLocalidades(null)
     setProvinciaFiltro("")
     setBusquedaNombre("")
+    setError("")
   }
 
   return (
@@ -150,14 +193,12 @@ export default function TransportistasAdmin() {
             onChange={e => setBusquedaNombre(e.target.value)} />
         </div>
 
-        {/* Botón seleccionar toda la provincia */}
         {provinciaFiltro && localidadesBuscadas.length > 0 && (
           <button onClick={seleccionarTodaProvincia} style={{ marginBottom: "8px" }}>
             Seleccionar toda la provincia ({localidadesBuscadas.length} localidades)
           </button>
         )}
 
-        {/* Lista de resultados para agregar */}
         {localidadesBuscadas.length > 0 && (
           <div style={{ maxHeight: "180px", overflowY: "auto", border: "1px solid #ddd", borderRadius: "6px", padding: "4px" }}>
             {localidadesBuscadas.map(l => (
@@ -171,34 +212,35 @@ export default function TransportistasAdmin() {
           </div>
         )}
 
-        {/* Chips de localidades seleccionadas */}
         {localidadesSeleccionadas.length > 0 && (
-		  <div>
-			<strong>Seleccionadas ({localidadesSeleccionadas.length}):</strong>
-			<div style={{
-			  display: "flex",
-			  flexWrap: "wrap",
-			  gap: "6px",
-			  marginTop: "6px",
-			  maxHeight: "120px",
-			  overflowY: "auto",
-			  border: "1px solid #ddd",
-			  borderRadius: "8px",
-			  padding: "8px"
-			}}>
-			  {localidadesSeleccionadas.map(l => (
-				<span key={l.id} style={{ background: "#e0e0e0", borderRadius: "12px", padding: "3px 10px", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
-				  {l.nombre}
-				  <button onClick={() => quitarLocalidad(l.id)}
-					style={{ background: "none", border: "none", cursor: "pointer", fontWeight: "bold", padding: 0 }}>×</button>
-				</span>
-			  ))}
-			</div>
-		  </div>
-		)}
+          <div>
+            <strong>Seleccionadas ({localidadesSeleccionadas.length}):</strong>
+            <div style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "6px",
+              marginTop: "6px",
+              maxHeight: "120px",
+              overflowY: "auto",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+              padding: "8px"
+            }}>
+              {localidadesSeleccionadas.map(l => (
+                <span key={l.id} style={{ background: "#e0e0e0", borderRadius: "12px", padding: "3px 10px", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
+                  {l.nombre}
+                  <button onClick={() => quitarLocalidad(l.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontWeight: "bold", padding: 0 }}>×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <button onClick={guardar}>{editandoId ? "Guardar cambios" : "Crear"}</button>
+      <button onClick={guardar} disabled={guardarDeshabilitado}>
+        {editandoId ? "Guardar cambios" : "Crear"}
+      </button>
       <button onClick={resetForm}>Cancelar</button>
       {error && <p className="error">{error}</p>}
 
