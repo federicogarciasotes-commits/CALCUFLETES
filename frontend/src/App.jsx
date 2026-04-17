@@ -498,7 +498,7 @@ function App() {
 		)}
 
 		{tabActiva === "admin" && usuario.role === "admin" && (
-		  <AdminPanel usuario={usuario} onOrigenCambiado={cargarOrigenes} />
+		  <AdminPanel onOrigenCambiado={cargarOrigenes} />
 		)}
 	  </div>
 	

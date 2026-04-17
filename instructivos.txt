@@ -6,6 +6,6 @@ Para empezar a trabajar, usar el siguiente comando:
 venv\Scripts\activate
 
 Para levantar el back:
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile certs/dev-key.pem --ssl-certfile certs/dev-cert.pem
 Para levantar el front:
 npm run dev

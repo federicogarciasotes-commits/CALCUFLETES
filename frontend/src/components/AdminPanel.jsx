@@ -4,7 +4,7 @@ import TransportistasAdmin from "./TransportistasAdmin"
 import OrigenesAdmin from "./OrigenesAdmin"
 import ProductosAdmin from "./ProductosAdmin"
 
-export default function AdminPanel({ usuario, onOrigenCambiado }) {
+export default function AdminPanel({ onOrigenCambiado }) {
   const [seccion, setSeccion] = useState("usuarios")
 
   return (

@@ -1,10 +1,7 @@
-import axios from "axios"
+import api from "./api";
 
 export async function obtenerTiposProducto() {
+  const res = await api.get("/productos/");
 
-  const res = await axios.get(
-    "http://127.0.0.1:8000/productos/"
-  )
-
-  return res.data
+  return res.data;
 }

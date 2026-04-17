@@ -33,6 +33,7 @@ function DestinoForm({
 
   useEffect(() => {
     if (destino.provincia_id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       cargarLocalidades(destino.provincia_id)
     }
   }, [destino.provincia_id])
