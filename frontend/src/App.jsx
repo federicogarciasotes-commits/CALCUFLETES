@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import './App.css'
-import axios from "axios"
+import api from "./services/api"
 
 import { calcularRuta } from "./services/rutas"
 
@@ -86,7 +86,7 @@ function App() {
 
     async function cargarProvincias() {
 		try {
-			const res = await axios.get("http://127.0.0.1:8000/provincias/")
+			const res = await api.get("/provincias/")
 			const ordenadas = res.data.sort((a, b) => a.nombre.localeCompare(b.nombre))
 			setProvincias(ordenadas)
 		} catch (error) {
@@ -101,7 +101,7 @@ function App() {
   // origen default
   const cargarOrigenDefault = async () => {
 	  try {
-		const res = await axios.get("http://127.0.0.1:8000/origenes/default")
+		const res = await api.get("/origenes/default")
 		const data = res.data
 		setOrigen({
 		  titulo: data.nombre,
@@ -121,7 +121,7 @@ function App() {
 
 	// Y actualizá onOrigenCambiado para que llame a las dos:
 	const cargarOrigenes = () => {
-	  axios.get("http://127.0.0.1:8000/origenes/titulos")
+	  api.get("/origenes/titulos")
 		.then(res => setOrigenes(res.data))
 	  cargarOrigenDefault()  // agregar esta línea
 	}
@@ -138,9 +138,7 @@ function App() {
 
     try{
 
-      const res = await axios.get(
-        `http://127.0.0.1:8000/origenes/${id}`
-      )
+      const res = await api.get(`/origenes/${id}`)
 
       const data = res.data
 
@@ -172,9 +170,7 @@ function App() {
 
     if (!origen.provincia_id) return
 
-    const res = await axios.get(
-      `http://127.0.0.1:8000/localidades/${origen.provincia_id}`
-    )
+    const res = await api.get(`/localidades/${origen.provincia_id}`)
 
     setResultadosOrigen(res.data)
 
@@ -214,49 +210,38 @@ function App() {
 			setResultado(data)
 
 			if (destino.localidad_id) {
-				// 1. Traer transportistas de la base
-				const resT = await axios.get(
-					`http://127.0.0.1:8000/transportistas/por-destino/${destino.localidad_id}`
-				)
-				
 				setCargandoTransportistas(true)
-				
-				// 2. Cotizar precios reales
-				const resCot = await axios.post(
-					"http://127.0.0.1:8000/cotizaciones/",
-					{
-						localidad_origen_id: origen.localidad_id,
-						localidad_destino_id: destino.localidad_id,
-						cantidad_bultos: totales.bultos || 1,
-						peso_total: totales.pesoTotal || 1
-					}
-				)
 
-				// 3. Cruzar: agregarle el precio a cada transportista
-				const cotizaciones = resCot.data  // array de {transportista, precio, ...}
-
-				const transportistasConPrecio = resT.data.map(t => {
-					const cot = cotizaciones.find(
-						c => c.transportista.toLowerCase().replace(" ", "") === 
-							 t.nombre.toLowerCase().replace(" ", "")
+				try {
+					const resCot = await api.post(
+						"/cotizaciones/",
+						{
+							localidad_origen_id: origen.localidad_id,
+							localidad_destino_id: destino.localidad_id,
+							cantidad_bultos: totales.bultos || 1,
+							peso_total: totales.pesoTotal || 1,
+							volumen_total: totales.volumenTotal || null
+						}
 					)
-					return {
-						...t,
-						precio: cot?.precio ?? null
-					}
-				})
-				
-				setCargandoTransportistas(false)
-				const ordenados = transportistasConPrecio.sort((a, b) => {
-					if (a.precio === null && b.precio === null) return 0
-					if (a.precio === null) return 1
-					if (b.precio === null) return -1
-					return a.precio - b.precio
-				})
-				setTransportistas(ordenados)
+
+					const cotizaciones = resCot.data || []
+					const cotizacionesConPrecio = cotizaciones.filter(
+						t => t.precio !== null && t.precio !== undefined
+					)
+					const ordenados = cotizacionesConPrecio.sort((a, b) => {
+						if (a.precio === null && b.precio === null) return 0
+						if (a.precio === null) return 1
+						if (b.precio === null) return -1
+						return a.precio - b.precio
+					})
+					setTransportistas(ordenados)
+				} finally {
+					setCargandoTransportistas(false)
+				}
 			}
 
 		} catch (error) {
+			setCargandoTransportistas(false)
 			console.error(error)
 			setResultado(null)
 			setMensaje("Error al calcular ruta")

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import Optional
 
 
 class Bulto(BaseModel):
@@ -16,3 +16,4 @@ class CotizacionRequest(BaseModel):
     localidad_destino_id: int
     cantidad_bultos: int
     peso_total: float
+    volumen_total: Optional[float] = None

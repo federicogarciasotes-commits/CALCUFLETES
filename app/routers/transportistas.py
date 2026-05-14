@@ -21,6 +21,7 @@ def transportista_to_dict(t: Transportista):
         "id": t.id,
         "nombre": t.nombre,
         "descripcion": t.descripcion,
+        "activo": t.activo,
         "destinos": [d.localidad.nombre for d in t.destinos],
         "dias": [d.dia_reparto.nombre for d in t.dias]
     }
@@ -51,7 +52,8 @@ def crear_transportista(
 
     transportista = Transportista(
         nombre=data.nombre,
-        descripcion=data.descripcion
+        descripcion=data.descripcion,
+        activo=data.activo,
     )
 
     db.add(transportista)
@@ -78,6 +80,7 @@ def crear_transportista(
         "id": transportista.id,
         "nombre": transportista.nombre,
         "descripcion": transportista.descripcion,
+        "activo": transportista.activo,
         "destinos_ids": data.destinos_ids,
         "dias_ids": data.dias_ids
     }
@@ -95,6 +98,7 @@ def transportistas_por_destino(localidad_id: int, db: Session = Depends(get_db))
         db.query(Transportista)
         .join(TransportistaDestino)
         .filter(TransportistaDestino.localidad_id == localidad_id)
+        .filter(Transportista.activo.is_(True))
         .all()
     )
 
@@ -108,6 +112,7 @@ def transportistas_por_destino(localidad_id: int, db: Session = Depends(get_db))
             "id": t.id,
             "nombre": t.nombre,
             "descripcion": t.descripcion,
+            "activo": t.activo,
             "dias": dias
         })
 
@@ -137,6 +142,7 @@ def listar_transportistas(db: Session = Depends(get_db)):
             "id": t.id,
             "nombre": t.nombre,
             "descripcion": t.descripcion,
+            "activo": t.activo,
             "destinos_ids": dest_ids,
             "dias_ids": dias_ids
         })
@@ -203,6 +209,7 @@ def actualizar_transportista(
     # actualizar datos básicos
     transportista.nombre = data.nombre
     transportista.descripcion = data.descripcion
+    transportista.activo = data.activo
 
     # borrar destinos actuales
     db.query(TransportistaDestino).filter(
@@ -237,6 +244,7 @@ def actualizar_transportista(
         "id": transportista.id,
         "nombre": transportista.nombre,
         "descripcion": transportista.descripcion,
+        "activo": transportista.activo,
         "destinos_ids": data.destinos_ids,
         "dias_ids": data.dias_ids
     }

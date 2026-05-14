@@ -1,4 +1,9 @@
+import asyncio
+import sys
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth
@@ -17,9 +22,44 @@ from app.models import usuario
 import os
 from dotenv import load_dotenv
 
+
+def is_winerror_10054(exception):
+    return (
+        sys.platform.startswith("win")
+        and isinstance(exception, ConnectionResetError)
+        and getattr(exception, "winerror", None) == 10054
+    )
+
+
+def ignore_winerror_10054(loop, context):
+    exception = context.get("exception")
+    if is_winerror_10054(exception):
+        return
+    loop.default_exception_handler(context)
+
+
 load_dotenv()
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if sys.platform.startswith("win"):
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(ignore_winerror_10054)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.middleware("http")
+async def ignore_client_connection_reset(request, call_next):
+    try:
+        return await call_next(request)
+    except ConnectionResetError as e:
+        if is_winerror_10054(e):
+            return Response(status_code=499)
+        raise
 
 origins = [
     origin.strip()

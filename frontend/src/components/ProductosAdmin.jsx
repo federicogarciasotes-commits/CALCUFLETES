@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
-
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` })
-const API = "http://127.0.0.1:8000"
+import api from "../services/api"
 
 export default function ProductosAdmin() {
   const [vista, setVista] = useState("subcategorias") // "subcategorias" | "productos"
@@ -25,7 +22,7 @@ function SubcategoriasPanel() {
   const [form, setForm] = useState({ nombre: "", largo: "", ancho: "", alto: "", peso: "" })
   const [originalForm, setOriginalForm] = useState(null)
 
-  const cargar = () => axios.get(`${API}/subcategorias/`).then(r => setLista(r.data))
+  const cargar = () => api.get("/subcategorias/").then(r => setLista(r.data))
   useEffect(() => { cargar() }, [])
 
   // Auto-dismiss del error
@@ -65,9 +62,9 @@ function SubcategoriasPanel() {
     }
     try {
       if (editandoId) {
-        await axios.put(`${API}/subcategorias/${editandoId}`, body, { headers: headers() })
+        await api.put(`/subcategorias/${editandoId}`, body)
       } else {
-        await axios.post(`${API}/subcategorias`, body, { headers: headers() })
+        await api.post("/subcategorias", body)
       }
       resetForm()
       cargar()
@@ -84,7 +81,7 @@ function SubcategoriasPanel() {
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar?")) return
     try {
-      await axios.delete(`${API}/subcategorias/${id}`, { headers: headers() })
+      await api.delete(`/subcategorias/${id}`)
       cargar()
     } catch (e) { setError(e.response?.data?.detail || "Error") }
   }
@@ -141,10 +138,10 @@ function ProductosPanel() {
     s.nombre.toLowerCase().includes(busquedaSub.toLowerCase())
   )
 
-  const cargar = () => axios.get(`${API}/productos/`).then(r => setProductos(r.data))
+  const cargar = () => api.get("/productos/").then(r => setProductos(r.data))
   useEffect(() => {
     cargar()
-    axios.get(`${API}/subcategorias/`).then(r => setSubcategorias(r.data))
+    api.get("/subcategorias/").then(r => setSubcategorias(r.data))
   }, [])
 
   // Auto-dismiss del error
@@ -184,9 +181,9 @@ function ProductosPanel() {
     if (form.subcategorias_ids.length === 0) return setError("Seleccioná al menos una subcategoría")
     try {
       if (editandoId) {
-        await axios.put(`${API}/productos/${editandoId}`, form, { headers: headers() })
+        await api.put(`/productos/${editandoId}`, form)
       } else {
-        await axios.post(`${API}/productos`, form, { headers: headers() })
+        await api.post("/productos", form)
       }
       resetForm()
       cargar()
@@ -203,7 +200,7 @@ function ProductosPanel() {
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar?")) return
     try {
-      await axios.delete(`${API}/productos/${id}`, { headers: headers() })
+      await api.delete(`/productos/${id}`)
       cargar()
     } catch (e) { setError(e.response?.data?.detail || "Error") }
   }

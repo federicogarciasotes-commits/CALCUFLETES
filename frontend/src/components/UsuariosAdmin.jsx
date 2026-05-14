@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
+import api from "../services/api"
 
 export default function UsuariosAdmin() {
   const [usuarios, setUsuarios] = useState([])
@@ -10,9 +10,7 @@ export default function UsuariosAdmin() {
   const [passwordVisible, setPasswordVisible] = useState(false)
 
   const cargarUsuarios = async () => {
-    const res = await axios.get("http://127.0.0.1:8000/usuarios/listar", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-    })
+    const res = await api.get("/usuarios/listar")
     setUsuarios(res.data)
   }
 
@@ -67,16 +65,15 @@ export default function UsuariosAdmin() {
     }
 
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` }
       const payload = { ...form }
       if (editandoId && payload.password === "********") {
         delete payload.password
       }
 
       if (editandoId) {
-        await axios.put(`http://127.0.0.1:8000/usuarios/${editandoId}`, payload, { headers })
+        await api.put(`/usuarios/${editandoId}`, payload)
       } else {
-        await axios.post("http://127.0.0.1:8000/usuarios/", payload, { headers })
+        await api.post("/usuarios/", payload)
       }
       setForm({ username: "", password: "", role: "vendedor" })
       setOriginalForm(null)
@@ -98,9 +95,7 @@ export default function UsuariosAdmin() {
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este usuario?")) return
-    await axios.delete(`http://127.0.0.1:8000/usuarios/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-    })
+    await api.delete(`/usuarios/${id}`)
     cargarUsuarios()
   }
 

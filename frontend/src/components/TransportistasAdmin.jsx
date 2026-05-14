@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
-
-const API = "http://127.0.0.1:8000"
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` })
+import api from "../services/api"
 
 export default function TransportistasAdmin() {
   const [transportistas, setTransportistas] = useState([])
@@ -14,22 +11,22 @@ export default function TransportistasAdmin() {
   const [localidadesSeleccionadas, setLocalidadesSeleccionadas] = useState([]) // [{id, nombre}]
   const [editandoId, setEditandoId] = useState(null)
   const [error, setError] = useState("")
-  const [form, setForm] = useState({ nombre: "", descripcion: "", dias_ids: [] })
+  const [form, setForm] = useState({ nombre: "", descripcion: "", activo: true, dias_ids: [] })
 
   // Snapshots para detectar cambios en edición
   const [originalForm, setOriginalForm] = useState(null)
   const [originalLocalidades, setOriginalLocalidades] = useState(null)
 
   const cargar = async () => {
-    const r = await axios.get(`${API}/transportistas/listar`, { headers: headers() })
+    const r = await api.get("/transportistas/listar")
     setTransportistas(r.data)
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     cargar()
-    axios.get(`${API}/provincias/`).then(r => setProvincias(r.data))
-    axios.get(`${API}/transportistas/dias/`).then(r => setDias(r.data))
+    api.get("/provincias/").then(r => setProvincias(r.data))
+    api.get("/transportistas/dias/").then(r => setDias(r.data))
   }, [])
 
   // Buscar localidades cuando cambia provincia o nombre
@@ -42,7 +39,7 @@ export default function TransportistasAdmin() {
     const params = new URLSearchParams()
     if (provinciaFiltro) params.append("provincia_id", provinciaFiltro)
     if (busquedaNombre) params.append("nombre", busquedaNombre)
-    axios.get(`${API}/localidades/buscar?${params}`).then(r => setLocalidadesBuscadas(r.data))
+    api.get(`/localidades/buscar?${params}`).then(r => setLocalidadesBuscadas(r.data))
   }, [provinciaFiltro, busquedaNombre])
 
   // Auto-dismiss del error
@@ -62,6 +59,7 @@ export default function TransportistasAdmin() {
     if (editandoId && originalForm && originalLocalidades !== null) {
       const mismoNombre = form.nombre === originalForm.nombre
       const mismaDesc = form.descripcion === originalForm.descripcion
+      const mismoActivo = form.activo === originalForm.activo
       const mismosDias =
         form.dias_ids.length === originalForm.dias_ids.length &&
         [...form.dias_ids].sort().join() === [...originalForm.dias_ids].sort().join()
@@ -70,7 +68,7 @@ export default function TransportistasAdmin() {
         [...localidadesSeleccionadas].map(l => l.id).sort().join() ===
         [...originalLocalidades].map(l => l.id).sort().join()
 
-      if (mismoNombre && mismaDesc && mismosDias && mismasLocalidades) return true
+      if (mismoNombre && mismaDesc && mismoActivo && mismosDias && mismasLocalidades) return true
     }
 
     return false
@@ -109,9 +107,9 @@ export default function TransportistasAdmin() {
     }
     try {
       if (editandoId) {
-        await axios.put(`${API}/transportistas/editar/${editandoId}`, body, { headers: headers() })
+        await api.put(`/transportistas/editar/${editandoId}`, body)
       } else {
-        await axios.post(`${API}/transportistas/`, body, { headers: headers() })
+        await api.post("/transportistas/", body)
       }
       resetForm()
       cargar()
@@ -122,13 +120,18 @@ export default function TransportistasAdmin() {
 
   const editar = async (t) => {
     setEditandoId(t.id)
-    const datos = { nombre: t.nombre, descripcion: t.descripcion || "", dias_ids: t.dias_ids }
+    const datos = {
+      nombre: t.nombre,
+      descripcion: t.descripcion || "",
+      activo: t.activo ?? true,
+      dias_ids: t.dias_ids
+    }
     setForm(datos)
     setOriginalForm(datos)
 
     if (t.destinos_ids.length > 0) {
-      await axios.get(`${API}/localidades/buscar`)
-      const detalle = await axios.get(`${API}/transportistas/${t.id}`)
+      await api.get("/localidades/buscar")
+      const detalle = await api.get(`/transportistas/${t.id}`)
       const locs = detalle.data.destinos.map((nombre, i) => ({ id: t.destinos_ids[i], nombre }))
       setLocalidadesSeleccionadas(locs)
       setOriginalLocalidades(locs)
@@ -141,7 +144,7 @@ export default function TransportistasAdmin() {
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este transportista?")) return
     try {
-      await axios.delete(`${API}/transportistas/${id}`, { headers: headers() })
+      await api.delete(`/transportistas/${id}`)
       cargar()
     } catch (e) {
       setError(e.response?.data?.detail || "Error al eliminar")
@@ -150,7 +153,7 @@ export default function TransportistasAdmin() {
 
   const resetForm = () => {
     setEditandoId(null)
-    setForm({ nombre: "", descripcion: "", dias_ids: [] })
+    setForm({ nombre: "", descripcion: "", activo: true, dias_ids: [] })
     setLocalidadesSeleccionadas([])
     setOriginalForm(null)
     setOriginalLocalidades(null)
@@ -167,6 +170,15 @@ export default function TransportistasAdmin() {
         onChange={e => setForm({...form, nombre: e.target.value})} />
       <input placeholder="Descripción" value={form.descripcion}
         onChange={e => setForm({...form, descripcion: e.target.value})} />
+      <label style={{ display: "inline-flex", alignItems: "center", gap: "4px", margin: "8px 0" }}>
+        <span>Activo:</span>
+        <input
+          type="checkbox"
+          checked={form.activo}
+          onChange={e => setForm({ ...form, activo: e.target.checked })}
+          style={{ margin: 0 }}
+        />
+      </label>
 
       {/* Días */}
       <div>
@@ -246,12 +258,13 @@ export default function TransportistasAdmin() {
 
       <h3>Transportistas existentes</h3>
       <table>
-        <thead><tr><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody>
           {transportistas.map(t => (
             <tr key={t.id}>
               <td>{t.nombre}</td>
               <td>{t.descripcion}</td>
+              <td>{t.activo ? "Activo" : "Inactivo"}</td>
               <td>
                 <button onClick={() => editar(t)}>Editar</button>
                 <button onClick={() => eliminar(t.id)}>Eliminar</button>

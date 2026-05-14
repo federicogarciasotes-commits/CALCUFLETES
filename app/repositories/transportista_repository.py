@@ -9,6 +9,13 @@ class TransportistaRepository:
     def __init__(self, db):
         self.db = db
 
+    def obtener_todos(self):
+
+        return (
+            self.db.query(Transportista)
+            .filter(Transportista.activo.is_(True))
+            .all()
+        )
 
     def obtener_por_localidad(self, localidad_id):
 

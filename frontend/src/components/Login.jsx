@@ -1,5 +1,5 @@
 import { useState } from "react"
-import axios from "axios"
+import api from "../services/api"
 import '../App.css'
 
 function Login({ setUsuario }) {
@@ -17,18 +17,13 @@ function Login({ setUsuario }) {
       params.append("username", username)
       params.append("password", password)
 
-      const res = await axios.post(
-        "http://127.0.0.1:8000/login",
-        params
-      )
+      const res = await api.post("/login", params)
 
       const token = res.data.access_token
 
       localStorage.setItem("token", token)
 	  
-	  const me = await axios.get("http://127.0.0.1:8000/me", {
-	    headers: { Authorization: `Bearer ${token}` }
-	  })
+	  const me = await api.get("/me")
 	  localStorage.setItem("usuario", JSON.stringify(me.data))
 	  setUsuario(me.data)
 

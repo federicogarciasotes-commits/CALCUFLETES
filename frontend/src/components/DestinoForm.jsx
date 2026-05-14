@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
+import api from "../services/api"
 
 // Normaliza texto: minúsculas, sin acentos, sin puntos
 function normalizar(texto) {
@@ -24,7 +24,7 @@ function DestinoForm({
 
   const cargarLocalidades = async (provincia_id) => {
     if (!provincia_id) return
-    const res = await axios.get(`http://127.0.0.1:8000/localidades/buscar`, {
+    const res = await api.get("/localidades/buscar", {
 		params: { provincia_id }
 	})
     const ordenadas = res.data.sort((a, b) => a.nombre.localeCompare(b.nombre))

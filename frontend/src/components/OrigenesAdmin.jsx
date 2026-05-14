@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react"
-import axios from "axios"
-
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` })
+import api from "../services/api"
 
 export default function OrigenesAdmin({ onOrigenCambiado }) {
 
@@ -20,14 +18,14 @@ export default function OrigenesAdmin({ onOrigenCambiado }) {
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
 
   const cargar = async () => {
-    const r = await axios.get("http://127.0.0.1:8000/origenes/")
+    const r = await api.get("/origenes/")
     setOrigenes(r.data)
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     cargar()
-    axios.get("http://127.0.0.1:8000/provincias/").then(r => setProvincias(r.data))
+    api.get("/provincias/").then(r => setProvincias(r.data))
   }, [])
 
   // Auto-dismiss del error
@@ -44,7 +42,7 @@ export default function OrigenesAdmin({ onOrigenCambiado }) {
     const params = new URLSearchParams()
     if (provinciaId) params.append("provincia_id", provinciaId)
     if (nombre) params.append("nombre", nombre)
-    axios.get(`http://127.0.0.1:8000/localidades/buscar?${params}`)
+    api.get(`/localidades/buscar?${params}`)
       .then(r => setLocalidades(r.data))
   }
 
@@ -88,9 +86,9 @@ export default function OrigenesAdmin({ onOrigenCambiado }) {
     }
     try {
       if (editandoId) {
-        await axios.put(`http://127.0.0.1:8000/origenes/${editandoId}`, body, { headers: headers() })
+        await api.put(`/origenes/${editandoId}`, body)
       } else {
-        await axios.post("http://127.0.0.1:8000/origenes/", body, { headers: headers() })
+        await api.post("/origenes/", body)
       }
       resetForm()
       await cargar()
@@ -101,15 +99,15 @@ export default function OrigenesAdmin({ onOrigenCambiado }) {
   }
 
   const editar = async (id) => {
-    const r = await axios.get(`http://127.0.0.1:8000/origenes/${id}`)
+    const r = await api.get(`/origenes/${id}`)
     const d = r.data
 
     // Traer localidades de la provincia para mostrar el nombre y poblar el dropdown
     let nombreLocalidad = ""
     let localidadesDeProvincia = []
     try {
-      const rl = await axios.get(
-        `http://127.0.0.1:8000/localidades/buscar?provincia_id=${d.direccion.provincia_id}`
+      const rl = await api.get(
+        `/localidades/buscar?provincia_id=${d.direccion.provincia_id}`
       )
       localidadesDeProvincia = rl.data
       const encontrada = rl.data.find(l => l.id === d.direccion.localidad_id)
@@ -135,7 +133,7 @@ export default function OrigenesAdmin({ onOrigenCambiado }) {
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este origen?")) return
     try {
-      await axios.delete(`http://127.0.0.1:8000/origenes/${id}`, { headers: headers() })
+      await api.delete(`/origenes/${id}`)
       await cargar()
       onOrigenCambiado()
     } catch (e) {
