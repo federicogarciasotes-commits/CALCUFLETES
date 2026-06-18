@@ -1,3 +1,30 @@
+import unicodedata
+
+
+def normalizar_texto(texto, reemplazos=(".", ",", "-", "_", "(", ")")):
+    texto = unicodedata.normalize("NFKD", texto or "")
+    texto = texto.encode("ascii", "ignore").decode("ascii")
+    for caracter in reemplazos:
+        texto = texto.replace(caracter, " ")
+    return " ".join(texto.upper().split())
+
+
+def to_float(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    value = str(value).strip()
+    if "," in value and "." in value:
+        value = value.replace(".", "").replace(",", ".")
+    elif "," in value:
+        value = value.replace(",", ".")
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def _medidas_bulto(bulto):
     alto_cm = round(bulto.alto * 100)
     ancho_cm = round(bulto.ancho * 100)

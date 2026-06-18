@@ -33,6 +33,9 @@ class CotizadorService:
             "no llega",
             "destino invalido",
             "origen invalido",
+            "no tiene cotizacion disponible",
+            "ningun producto disponible",
+            "no se recibieron cotizaciones",
         )
         if any(patron in error for patron in patrones_cobertura):
             return "sin_cobertura"

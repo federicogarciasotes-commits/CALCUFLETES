@@ -1,13 +1,12 @@
 import asyncio
 import logging
-import unicodedata
 from datetime import datetime, timedelta, timezone
 
 import httpx
 
 from .base import TransportistaCotizador
 from .factory import registrar_proveedor
-from .utils import calcular_medidas_por_bulto
+from .utils import calcular_medidas_por_bulto, normalizar_texto, to_float
 
 
 logger = logging.getLogger(__name__)
@@ -34,31 +33,9 @@ class PulquipackCotizador(TransportistaCotizador):
         self._sync_cache = None
         self._sync_cache_at = None
 
-    def _normalizar(self, texto):
-        texto = unicodedata.normalize("NFKD", texto or "")
-        texto = texto.encode("ascii", "ignore").decode("ascii")
-        for caracter in (".", ",", "-", "_", "(", ")"):
-            texto = texto.replace(caracter, " ")
-        return " ".join(texto.upper().split())
-
-    def _to_float(self, value, default=0):
-        if value is None:
-            return default
-        if isinstance(value, (int, float)):
-            return float(value)
-        value = str(value).strip()
-        if "," in value and "." in value:
-            value = value.replace(".", "").replace(",", ".")
-        elif "," in value:
-            value = value.replace(",", ".")
-        try:
-            return float(value)
-        except ValueError:
-            return default
-
     def _score_nombre(self, actual, objetivo):
-        actual_norm = self._normalizar(actual)
-        objetivo_norm = self._normalizar(objetivo)
+        actual_norm = normalizar_texto(actual)
+        objetivo_norm = normalizar_texto(objetivo)
         if not actual_norm or not objetivo_norm:
             return 0
         if actual_norm == objetivo_norm:
@@ -134,9 +111,9 @@ class PulquipackCotizador(TransportistaCotizador):
 
     def _calcular_medidas(self, bultos):
         medidas = calcular_medidas_por_bulto(bultos)
-        peso_total = sum(self._to_float(m["peso"]) for m in medidas)
+        peso_total = sum(to_float(m["peso"], default=0) for m in medidas)
         volumenes_bulto_m3 = [
-            self._to_float(m["volumen_cm3"]) / 1_000_000 for m in medidas
+            to_float(m["volumen_cm3"], default=0) / 1_000_000 for m in medidas
         ]
         volumen_total_m3 = sum(volumenes_bulto_m3)
         volumen_cotizable_m3 = max(volumenes_bulto_m3) if volumenes_bulto_m3 else 0
@@ -157,10 +134,10 @@ class PulquipackCotizador(TransportistaCotizador):
         for importe in importes:
             if str(importe.get("codTarifa") or "").strip() != cod_tarifa:
                 continue
-            desde = self._to_float(importe.get("m3Desde"))
-            hasta = self._to_float(importe.get("m3Hasta"))
+            desde = to_float(importe.get("m3Desde"), default=0)
+            hasta = to_float(importe.get("m3Hasta"), default=0)
             if volumen_m3 >= desde and volumen_m3 <= hasta:
-                precio = self._to_float(
+                precio = to_float(
                     importe.get("fleteExpress" if express else "flete"),
                     default=None,
                 )
@@ -311,7 +288,7 @@ class PulquipackCotizador(TransportistaCotizador):
 
         tipo_paquete, factor_tipo = self._tipo_paquete(medidas["peso_facturado"])
         precio = precio_base * factor_tipo
-        incremento_bulto = self._to_float(importe.get("incrementoBulto"))
+        incremento_bulto = to_float(importe.get("incrementoBulto"), default=0)
         if medidas["cantidad_bultos"] > 1:
             precio *= 1 + (((medidas["cantidad_bultos"] - 1) * incremento_bulto) / 100)
 

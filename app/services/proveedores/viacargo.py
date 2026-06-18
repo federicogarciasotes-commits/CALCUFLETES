@@ -13,6 +13,12 @@ class ViacargoCotizador(TransportistaCotizador):
 
     nombre = "viacargo"
 
+    def _format_kilos(self, kilos):
+        kilos = round(float(kilos), 1)
+        if kilos.is_integer():
+            return str(int(kilos))
+        return f"{kilos:.1f}"
+
     def _bulto_promedio(self, medidas):
         cantidad_bultos = medidas["cantidad_bultos"] or 1
         volumen_promedio_cm3 = medidas["volumen_cm3"] / cantidad_bultos
@@ -46,7 +52,7 @@ class ViacargoCotizador(TransportistaCotizador):
             "CodigoPostalRemitente": str(origen["cp"]),
             "CodigoPostalDestinatario": str(destino["cp"]),
             "NumeroBultos": str(medidas["cantidad_bultos"]),
-            "Kilos": str(bulto_promedio["peso"]),
+            "Kilos": self._format_kilos(bulto_promedio["peso"]),
             "Alto": str(bulto_promedio["alto_cm"]),
             "Ancho": str(bulto_promedio["ancho_cm"]),
             "Largo": str(bulto_promedio["largo_cm"]),
@@ -73,10 +79,27 @@ class ViacargoCotizador(TransportistaCotizador):
             }
 
         if response.status_code != 200:
+            body = response.text[:300]
+            if response.status_code == 404 and "ERROR(Alerce)" in body:
+                return {
+                    "transportista": self.nombre,
+                    "precio": None,
+                    "error": "Via Cargo no tiene cotizacion disponible para esta ruta o tipo de envio.",
+                    "detalle": {
+                        "payload": payload,
+                        "status_code": response.status_code,
+                        "respuesta": body,
+                    },
+                }
             return {
                 "transportista": self.nombre,
                 "precio": None,
-                "error": f"HTTP {response.status_code}: {response.text[:200]}",
+                "error": f"HTTP {response.status_code}: {body}",
+                "detalle": {
+                    "payload": payload,
+                    "status_code": response.status_code,
+                    "respuesta": body,
+                },
             }
 
         try:
