@@ -1,15 +1,27 @@
-1. Tener instalado Python (py --version)
-2. Usar los siguientes comandos:
-	python -m venv venv
-	venv\Scripts\activate
-	pip install -r requirements.txt
-3. Instalar Node.js: nodejs.org
-4. Usar estos comandos:
-	npm install
-	npm run dev
+CONFIGURAR UNA COMPUTADORA NUEVA
 
-5. Crear certificado para poder usar local:
-winget install FiloSottile.mkcert
-mkcert -install <- cerrar la terminal y volverla a abrir
-mkdir certs
-mkcert -key-file certs/dev-key.pem -cert-file certs/dev-cert.pem [localhost] [otras IP que quieras] 
+Requisitos previos:
+- Git
+- Python 3, marcando Add Python to PATH
+- Node.js LTS
+
+Pasos:
+1. Clonar el repositorio o ejecutar git pull.
+2. Ejecutar CONFIGURAR_PC_NUEVA.bat una sola vez.
+3. Completar las claves necesarias en .env. Este archivo nunca se sube a GitHub.
+4. La tarea programada existente debe seguir apuntando a:
+   arrancar_server\start_silent.vbs
+   No hace falta crearla nuevamente. El VBS detecta automaticamente la carpeta
+   del proyecto y levanta el backend y el frontend.
+5. Abrir https://localhost:5173.
+
+INICIAR.bat queda disponible para realizar un inicio manual.
+
+El configurador crea venv, instala requirements.txt, instala el frontend y
+genera certificados HTTPS exclusivos para la computadora actual.
+
+IMPORTANTE
+- cotizador.db no se guarda en GitHub. Copiarlo por un medio seguro si se
+  necesitan los datos de otra instalacion.
+- Los certificados y sus claves privadas tampoco se guardan en GitHub.
+- Nunca colocar secretos reales en .env.example.

@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import sys
+from pathlib import Path
 
 import uvicorn
 
@@ -16,14 +17,17 @@ LOG_CONFIG["loggers"]["app"] = {
     "propagate": False,
 }
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CERTS_DIR = PROJECT_ROOT / "certs"
+
 
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        ssl_keyfile="certs/dev-key.pem",
-        ssl_certfile="certs/dev-cert.pem",
+        ssl_keyfile=str(CERTS_DIR / "dev-key.pem"),
+        ssl_certfile=str(CERTS_DIR / "dev-cert.pem"),
         log_level="info",
         log_config=LOG_CONFIG,
     )

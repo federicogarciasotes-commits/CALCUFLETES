@@ -1,5 +1,17 @@
 venv/
 __pycache__/
-*.pyc
-cotizador.db
+*.py[cod]
+
+# Configuracion y datos locales
 .env
+.env.*
+!.env.example
+*.db
+
+# Certificados generados para cada computadora
+certs/*.pem
+
+# Archivos generados
+backend*.log
+frontend/node_modules/
+frontend/dist/
